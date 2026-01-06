@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Corpo 2026</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- Manifest inline (iOS aceita mesmo assim para ícone/nome) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMDAiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSIyNTYiIHk9IjI4MCIgZm9udC1zaXplPSIyMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtZmFtaWx5PSJBcmlhbCI+MjY8L3RleHQ+PC9zdmc+">
+
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --card: #1c1c1e;
+      --text: #f5f5f7;
+      --muted: #9e9ea4;
+      --accent: #00c853;
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #00c853, #00e676);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 26px;
+      color: #000;
+    }
+
+    h1 { font-size: 22px; margin: 0; }
+    h2 { font-size: 18px; margin-bottom: 10px; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input, select, button {
+      width: 100%;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+    }
+
+    input, select {
+      background: #2c2c2e;
+      color: var(--text);
+    }
+
+    button {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .item {
+      background: #2c2c2e;
+      border-radius: 14px;
+      padding: 6px;
+    }
+
+    .item img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .meta {
+      font-size: 12px;
+      text-align: center;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .compare {
+      display: flex;
+      gap: 8px;
+    }
+
+    .compare img { width: 50%; border-radius: 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">26</div>
+  <div>
+    <h1>Corpo 2026</h1>
+    <div style="font-size:13px;color:var(--muted)">Acompanhamento corporal anual</div>
+  </div>
+</header>
+
+<div class="card">
+  <h2>Novo registro</h2>
+
+  <label>Peso (kg)</label>
+  <input type="number" id="peso" step="0.1" placeholder="Ex: 82.5" />
+
+  <label>Fase</label>
+  <select id="fase">
+    <option>Cutting</option>
+    <option>Bulking</option>
+    <option>Manutenção</option>
+  </select>
+
+  <label>Foto</label>
+  <input type="file" accept="image/*" capture="environment" id="cameraInput" />
+  <input type="file" accept="image/*" id="uploadInput" />
+</div>
+
+<div class="card">
+  <h2>Comparar</h2>
+  <select id="foto1"></select>
+  <select id="foto2"></select>
+  <button onclick="comparar()">Comparar fotos</button>
+  <div id="resultado" class="compare"></div>
+</div>
+
+<div class="card">
+  <h2>Galeria</h2>
+  <div id="gallery" class="gallery"></div>
+</div>
+
+<script>
+let db;
+const req = indexedDB.open('corpo2026DB', 1);
+
+req.onupgradeneeded = e => {
+  db = e.target.result;
+  db.createObjectStore('fotos', { keyPath: 'id', autoIncrement: true });
+};
+
+req.onsuccess = e => { db = e.target.result; carregar(); };
+
+function salvar(file) {
+  const r = new FileReader();
+  r.onload = e => {
+    const tx = db.transaction('fotos', 'readwrite');
+    tx.objectStore('fotos').add({
+      img: e.target.result,
+      data: new Date().toISOString(),
+      peso: peso.value,
+      fase: fase.value
+    });
+    tx.oncomplete = carregar;
+  };
+  r.readAsDataURL(file);
+}
+
+[cameraInput, uploadInput].forEach(i => {
+  i.addEventListener('change', e => e.target.files[0] && salvar(e.target.files[0]));
+});
+
+function carregar() {
+  gallery.innerHTML = foto1.innerHTML = foto2.innerHTML = '';
+  const tx = db.transaction('fotos', 'readonly');
+  tx.objectStore('fotos').openCursor().onsuccess = e => {
+    const c = e.target.result;
+    if (!c) return;
+
+    const div = document.createElement('div');
+    div.className = 'item';
+
+    const img = document.createElement('img');
+    img.src = c.value.img;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.innerText = `${new Date(c.value.data).toLocaleDateString('pt-BR')} • ${c.value.fase}`;
+
+    div.append(img, meta);
+    gallery.appendChild(div);
+
+    const opt = new Option(new Date(c.value.data).toLocaleDateString('pt-BR'), c.value.img);
+    foto1.add(opt.cloneNode(true));
+    foto2.add(opt);
+
+    c.continue();
+  };
+}
+
+function comparar() {
+  resultado.innerHTML = '';
+  [foto1, foto2].forEach(f => {
+    const img = document.createElement('img');
+    img.src = f.value;
+    resultado.appendChild(img);
+  });
+}
+</script>
+</body>
+</html>
